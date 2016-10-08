@@ -20,4 +20,4 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64]);
 void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64]);
 void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]);
 void iota( unsigned char a[5][5][64] , unsigned long ir);
-
+void keccakp(unsigned char *s , unsigned int b ,unsigned long nr );

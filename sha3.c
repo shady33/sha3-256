@@ -35,24 +35,7 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     /* Implement the rest of this function */
 
     printf("Entering SHA-3\n");
-    unsigned char a[5][5][64];
-    unsigned char aprime[5][5][64];
-    memset(a, 0, sizeof(a));
-    memset(aprime, 0, sizeof(aprime));
-    string_state(m,a,l);
-    // print(a);
-    theta(a,aprime);
-    rho(aprime,a);
-    pi(a,aprime);
-    chi(aprime,a);
-    iota(a,0);
-    print(a);
-    theta(a,aprime);
-    print(aprime);
-    printf("\n");
-    rho(aprime,a);
-    print(a);
-
+    keccakp( m , l ,12 );
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -273,7 +256,7 @@ void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]){
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 5 ; j++)
             for(int k = 0 ; k < 64 ; k++)
-                aprime[i][j][k] = a[i][j][k] ^ a[(i+1)%5][j][k] ^ a[(i+2)%5][j][k];
+                aprime[i][j][k] = a[i][j][k] ^ ((a[(i+1)%5][j][k] ^ 1) * a[(i+2)%5][j][k]);
 }
 
 /* Perform the iota(A,ir) algorithm
@@ -303,8 +286,22 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
  * A' - output string
  */
 
-unsigned char* keccakp( unsigned char* s , unsigned long b ,unsigned long nr ){
+void keccakp(unsigned char *s , unsigned int b ,unsigned long nr ){
+    
+    unsigned char a[5][5][64];
+    unsigned char aprime[5][5][64];
+    memset(a, 0, sizeof(a));
+    memset(aprime, 0, sizeof(aprime));
+    string_state(s,a,b);
 
+    for (int ir = 0 ; ir < 2 ; ir++){
+        theta(a,aprime);
+        rho(aprime,a);
+        pi(a,aprime);
+        chi(aprime,a);
+        iota(a,ir);
+    }
+    print(a);
 }
 
 /* Perform the sponge(A,ir) algorithm
