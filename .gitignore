@@ -1,0 +1,4 @@
+*.o
+sha3_driver.dSYM
+sha3_driver
+.DS_Store
