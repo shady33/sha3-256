@@ -266,10 +266,10 @@ void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]){
 
 void iota( unsigned char a[5][5][64] , unsigned long ir){
     unsigned int l = 6;
-    unsigned char RC[(1<<l)-1];
+    unsigned char RC[(1<<l)];
     memset(RC,0,sizeof(RC));
 
-    for (int j = 0 ; j < l ; j++){
+    for (int j = 0 ; j < l + 1 ; j++){
         RC[(1<<j)-1] = rc(j + (7 * ir));
         
     }
@@ -294,14 +294,25 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr ){
     memset(aprime, 0, sizeof(aprime));
     string_state(s,a,b);
 
-    for (int ir = 0 ; ir < 2 ; ir++){
+    for (int ir = 0 ; ir < 24 ; ir++){
+        print(a);
         theta(a,aprime);
+        printf("THETA\n");
+        print(aprime);
         rho(aprime,a);
+        printf("RHO\n");
+        print(a);
         pi(a,aprime);
+        printf("PI\n");
+        print(aprime);
         chi(aprime,a);
+        printf("CHI\n");
+        print(a);
         iota(a,ir);
+        printf("IOTA\n");
+        print(a);
     }
-    print(a);
+    
 }
 
 /* Perform the sponge(A,ir) algorithm
