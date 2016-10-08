@@ -46,8 +46,12 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     pi(a,aprime);
     chi(aprime,a);
     iota(a,0);
+    print(a);
     theta(a,aprime);
-        print(aprime);
+    print(aprime);
+    printf("\n");
+    rho(aprime,a);
+    print(a);
 
 }
 
@@ -340,15 +344,35 @@ void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size
     }
 }
 
+// void print(unsigned char a[5][5][64]){
+//     printf("Printing\n");
+//     for(int i = 0 ; i < 5 ; i++)
+//         for(int j = 0 ; j < 5 ; j++)
+//             for(int k = 0 ; k < 64 ; k++){
+//                 if(k%8 == 0)
+//                     printf(" ");
+//                 printf("%d", a[i][j][k]);
+//             }    
+// }
+
 void print(unsigned char a[5][5][64]){
     printf("Printing\n");
-    for(int i = 0 ; i < 5 ; i++)
-        for(int j = 0 ; j < 5 ; j++)
-            for(int k = 0 ; k < 64 ; k++){
-                if(k%8 == 0)
-                    printf(" ");
-                printf("%d", a[i][j][k]);
-            }    
+    int num = 0;
+    for(int j = 0 ; j < 5 ; j++)
+        for(int i = 0 ; i < 5 ; i++){
+            for(int k = 63 ; k > -1 ; k-=8){
+                num = (a[i][j][k] == 1 ? 1 : 0 )<< (k%8);
+                num += (a[i][j][k-1] == 1 ? 1 : 0 )<< ((k-1)%8);
+                num += (a[i][j][k-2] == 1 ? 1 : 0 )<< ((k-2)%8);
+                num += (a[i][j][k-3] == 1 ? 1 : 0 )<< ((k-3)%8);
+                num += (a[i][j][k-4] == 1 ? 1 : 0 )<< ((k-4)%8);
+                num += (a[i][j][k-5] == 1 ? 1 : 0 )<< ((k-5)%8);
+                num += (a[i][j][k-6] == 1 ? 1 : 0 )<< ((k-6)%8);
+                num += (a[i][j][k-7] == 1 ? 1 : 0 )<< ((k-7)%8);
+                printf("%02x", num);
+            }
+            printf(" ");
+        }
 }
 
 void print_2d(unsigned char *a, int l, int m){
