@@ -239,12 +239,14 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
     //Step 3
     int i = 1;
     int j = 0;
+    int tmp = 0;
     for ( int t = 0; t < 24 ; t++){
         for(int k = 0 ; k < 64  ; k++){
             aprime[i][j][k] = a[i][j][positive_modulo((k-((t+1)*(t+2)/2)),64)];
         }
+        tmp = i;
         i = j;
-        j = ((2 * i) + (3 * j)) % 5;
+        j = ((2 * tmp) + (3 * j)) % 5;
     }
 }
 
