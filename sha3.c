@@ -294,7 +294,7 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
     memset(aprime, 0, sizeof(aprime));
     string_state(s,a,b);
 
-    for (int ir = 0 ; ir < 24 ; ir++){
+    for (int ir = 0 ; ir < nr ; ir++){
         print(a);
         theta(a,aprime);
         printf("THETA\n");
@@ -323,31 +323,29 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
  */
 
 void sponge( unsigned char* m , unsigned int l ){
-    unsigned char* op;
-    op = (unsigned char*)malloc(201);
-    keccakp( m , l ,12 ,op);
-    printstring(op);
+    // unsigned char* op;
+    // op = (unsigned char*)malloc(200);
+    // keccakp( m , l ,12 ,op);
+    // printstring(op);
 
     unsigned char *P;
     unsigned long p_len;
-    unsigned int x = 1088;
-    // p_len = pad10x1(P, 1088, l);
+    p_len = pad10x1(&P, 1088, l);
 
-    //Moved pad10x1 here
-    /* 1. j = (-l-2) mod x */
-    long j = x - ((l + 2) % x);
-    /* 2. P = 1 || zeroes(j) || 1 */
-    // Compute P bit and byte length
-    unsigned long P_bit_len = 2 + j;
-    unsigned long P_byte_len = (P_bit_len / 8) + (P_bit_len % 8 ? 1 : 0);
-    // Allocate P and initialize to 0
-    P = malloc(P_byte_len);
-    memset(P,0,sizeof(P));
-    // Set the 1st bit of P to 1
-    *(P+0) |= 1;
-    // Set the last bit of P to 1
-    *(P + P_byte_len - 1) |= (1 << (P_bit_len - 1) % 8);
+    unsigned long n = p_len / 1088;
+    // unsigned long c = 1600 - 1088;
 
+    unsigned char *S;
+    S = (unsigned char*)malloc(200);
+    memset(S,0,sizeof(S));
+
+    for ( int i = 0 ; i < n ; i++){
+        for ( int j = 0 ; j < 136 ; j++){
+            *(S+j) = *(S+j) ^ *(P+j+(i*136));
+        }
+        keccakp(S, 1600 ,24 , S);
+        printstring(S);
+    }
 }
 
 /* Perform the string to state array
