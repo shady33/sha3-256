@@ -35,7 +35,7 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     /* Implement the rest of this function */
 
     printf("Entering SHA-3\n");
-    keccakp( m , l ,12 );
+    sponge(m,l);
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -283,10 +283,10 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
  * s - input string
  * b - string length
  * nr - number of rounds
- * A' - output string
+ * op - output string
  */
 
-void keccakp(unsigned char *s , unsigned int b ,unsigned long nr ){
+unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op){
     
     unsigned char a[5][5][64];
     unsigned char aprime[5][5][64];
@@ -312,7 +312,8 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr ){
         printf("IOTA\n");
         print(a);
     }
-    
+
+    state_string(op,a);
 }
 
 /* Perform the sponge(A,ir) algorithm
@@ -321,8 +322,59 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr ){
  * z - output string
  */
 
-unsigned char* sponge( unsigned char* n , unsigned long d ){
+void sponge( unsigned char* m , unsigned int l ){
+    unsigned char* op;
+    op = (unsigned char*)malloc(201);
+    keccakp( m , l ,12 ,op);
+    printstring(op);
 
+    unsigned char *P;
+    unsigned long p_len;
+    unsigned int x = 1088;
+    // p_len = pad10x1(P, 1088, l);
+
+    //Moved pad10x1 here
+    /* 1. j = (-l-2) mod x */
+    long j = x - ((l + 2) % x);
+    /* 2. P = 1 || zeroes(j) || 1 */
+    // Compute P bit and byte length
+    unsigned long P_bit_len = 2 + j;
+    unsigned long P_byte_len = (P_bit_len / 8) + (P_bit_len % 8 ? 1 : 0);
+    // Allocate P and initialize to 0
+    P = malloc(P_byte_len);
+    memset(P,0,sizeof(P));
+    // Set the 1st bit of P to 1
+    *(P+0) |= 1;
+    // Set the last bit of P to 1
+    *(P + P_byte_len - 1) |= (1 << (P_bit_len - 1) % 8);
+
+}
+
+/* Perform the string to state array
+ * z - input state array
+ * n - output string
+ */
+
+void state_string(unsigned char *n , unsigned char z[5][5][64]){
+    printf("Entering State to String:\n");
+    int num = 0;
+    int cnt = 0;
+    for(int j = 0 ; j < 5 ; j++){
+        for(int i = 0 ; i < 5 ; i++){
+            for(int k = 0 ; k < 64 ; k+=8){
+                num = (z[i][j][k] == 1 ? 1 : 0 )<< (k%8);
+                num += (z[i][j][k+1] == 1 ? 1 : 0 )<< ((k+1)%8);
+                num += (z[i][j][k+2] == 1 ? 1 : 0 )<< ((k+2)%8);
+                num += (z[i][j][k+3] == 1 ? 1 : 0 )<< ((k+3)%8);
+                num += (z[i][j][k+4] == 1 ? 1 : 0 )<< ((k+4)%8);
+                num += (z[i][j][k+5] == 1 ? 1 : 0 )<< ((k+5)%8);
+                num += (z[i][j][k+6] == 1 ? 1 : 0 )<< ((k+6)%8);
+                num += (z[i][j][k+7] == 1 ? 1 : 0 )<< ((k+7)%8);
+                *(n+cnt) = num;
+                cnt += 1;
+            }
+        }
+    }
 }
 
 /* Perform the string to state array
@@ -335,9 +387,7 @@ void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size
     for(int j = 0 ; j < 5 ; j++){
         for(int i = 0 ; i < 5 ; i++){
             for(int k = 0 ; k < 64 ; k+=8){
-                // printf("%d %d %d %d \n",i,j,k, ((64 * ((5 * j) + i)) + k));
                 if(((64 * ((5 * j) + i)) + k) < size){
-                    
                     z[i][j][k] = BIT(*(n+i+j),0);
                     z[i][j][k+1] = BIT(*(n+i+j),1);
                     z[i][j][k+2] = BIT(*(n+i+j),2);
@@ -346,24 +396,18 @@ void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size
                     z[i][j][k+5] = BIT(*(n+i+j),5);
                     z[i][j][k+6] = BIT(*(n+i+j),6);
                     z[i][j][k+7] = BIT(*(n+i+j),7);
-                    // printf("%d ",  *(n+((64 * ( 5 * j + i ))+ k)));
-                //     z[i][j][k] = *(n + ((64 * ( 5 * j + i ))+ k));   // A[x, y, z]=S[w(5y+x)+z].
                 }
             }
         }
     }
 }
 
-// void print(unsigned char a[5][5][64]){
-//     printf("Printing\n");
-//     for(int i = 0 ; i < 5 ; i++)
-//         for(int j = 0 ; j < 5 ; j++)
-//             for(int k = 0 ; k < 64 ; k++){
-//                 if(k%8 == 0)
-//                     printf(" ");
-//                 printf("%d", a[i][j][k]);
-//             }    
-// }
+void printstring(unsigned char* s){
+    printf("Printing String\n");
+    for(int i = 0 ; i < 200 ; i++){
+        printf("%02x ", *(s+i));
+    }
+}
 
 void print(unsigned char a[5][5][64]){
     printf("Printing\n");
