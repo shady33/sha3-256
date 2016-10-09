@@ -33,11 +33,11 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
         return;
 
     /* Implement the rest of this function */
-    printf("Entering SHA-3\n");
+    // printf("Entering SHA-3\n");
     unsigned char *input;
     unsigned long length;
     length = concatenate_01(&input,m,l);
-    printf("String of length %d\n", length);
+    // printf("String of length %d\n", length);
     // printstring(input,length);
     sponge(d,s,input,length);
     free(input);
@@ -129,7 +129,7 @@ unsigned long concatenate_01(unsigned char **Z, const unsigned char *X,
  */
 unsigned long pad10x1(unsigned char **P, unsigned int x, unsigned int m)
 {
-    printf("Entering pad10x1\n" );
+    // printf("Entering pad10x1\n" );
     /* 1. j = (-m-2) mod x */
     long j = x - ((m + 2) % x);
     /* 2. P = 1 || zeroes(j) || 1 */
@@ -276,7 +276,7 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
     unsigned char RC[(1<<l)];
     memset(RC,0,sizeof(RC));
 
-    for (int j = 0 ; j < l + 1 ; j++){
+    for (unsigned int j = 0 ; j < l + 1 ; j++){
         RC[(1<<j)-1] = rc(j + (7 * ir));
     }
     for(int k = 0 ; k < 64 ; k++){
@@ -292,7 +292,7 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
  * op - output string
  */
 
-unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op){
+void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op){
     
     unsigned char a[5][5][64];
     unsigned char aprime[5][5][64];
@@ -302,7 +302,7 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
     string_state(s,a,b);
     // printstring(s,1600);
     // print_in_pairs(a);
-    for (int ir = 0 ; ir < nr ; ir++){
+    for (unsigned int ir = 0 ; ir < nr ; ir++){
         // printf("Inside ir %d\n",ir);
         // print(a);
         theta(a,aprime);
@@ -322,10 +322,9 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
         // print_in_pairs(a);
     }
     state_string(op,a);
-
 }
 
-/* Perform the sponge(A,ir) algorithm
+/* Perform the sponge algorithm
  * m - input string
  * l - non negative integer
  * out - output string
@@ -334,7 +333,7 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
 
 void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l ){
 
-    printf("\nEntering sponge:%d\n",l );
+    // printf("\nEntering sponge:%d\n",l );
     unsigned char *P;
     unsigned long p_len;
     unsigned char *inter;
@@ -353,10 +352,10 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     
     unsigned char *S;
     S = (unsigned char*)malloc(200);
-    memset(S,0,sizeof(S));
+    memset(S,0,sizeof(unsigned char));
 
-    printf("\nEntering sponge loop: %d\n" , p_len);
-    for ( int i = 0 ; i < n ; i++){
+    // printf("\nEntering sponge loop: %d\n" , p_len);
+    for (unsigned long i = 0 ; i < n ; i++){
         // printf("\nS: %d\n", i);
         // printstring(S,1600);
         for ( int j = 0 ; j < 136 ; j++){
@@ -377,10 +376,8 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     // printstring(S,1600);
 
     while (Z_len < out_len){
-        
         // printf("\nZ LOOP with length: %d\n",Z_len);
         // printstring(Z,Z_len);
-
         keccakp(S, 1600 ,24 , S);
         Z_len = concatenate(&Z,Z,Z_len,S,1088);        
     }
@@ -388,10 +385,10 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     // printf("\nFinal Z length: %d\n",Z_len);
     // printstring(Z,Z_len);
     memcpy(out,Z,32);
-    free(Z);
-    free(P);
     free(inter);
-    free(S);
+    free(P);
+    // free(S);
+    // free(Z);
 }
 
 /* Perform the string to state array
@@ -427,14 +424,14 @@ void state_string(unsigned char *n , unsigned char z[5][5][64]){
  */
 
 void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size){
-    int tmp = 0;
+    unsigned int tmp = 0;
     // printf("Entering String to State: %d\n",size);
     for(int j = 0 ; j < 5 ; j++){
         for(int i = 0 ; i < 5 ; i++){
             for(int k = 0 ; k < 64 ; k+=8){
                 tmp = (((64 * ((5 * j) + i))) + (k))/8;
                 // printf("%d %d %d %d\n", i,j,k,tmp);
-                if((tmp) < size){
+                if(tmp < size){
                     z[i][j][k] = BIT(*(n+tmp),0);
                     z[i][j][k+1] = BIT(*(n+tmp),1);
                     z[i][j][k+2] = BIT(*(n+tmp),2);
@@ -449,12 +446,21 @@ void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size
     }
 }
 
+/* Print String of a particular length
+ * s - input string
+ * len - length of string
+ */
+
 void printstring(unsigned char* s,unsigned int len){
     printf("Printing String\n");
-    for(int i = 0 ; i < ((len / 8) + (len % 8 ? 1 : 0)); i++){
+    for(unsigned int i = 0 ; i < ((len / 8) + (len % 8 ? 1 : 0)); i++){
         printf("%02x ", *(s+i));
     }
 }
+
+/* Print 5x5x64 matrix
+ * a - input matrix
+ */
 
 void print(unsigned char a[5][5][64]){
     printf("Printing\n");
@@ -476,6 +482,12 @@ void print(unsigned char a[5][5][64]){
         }
 }
 
+/* Print a 2D matrix
+ * a - input matrix
+ * l - rows of matrix
+ * m - columns of matrix
+ */
+
 void print_2d(unsigned char *a, int l, int m){
     printf("Printing 2D\n");
     for(int i = 0 ; i < l ; i++)
@@ -485,6 +497,10 @@ void print_2d(unsigned char *a, int l, int m){
             printf("%d", *(a+i+j));
         }    
 }
+
+/* Print a 5x5x64 matrix byte by byte
+ * a - input matrix
+ */
 
 void print_in_pairs(unsigned char a[5][5][64]){
     printf("\nPriting in pairs\n");
