@@ -33,9 +33,12 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
         return;
 
     /* Implement the rest of this function */
-
     printf("Entering SHA-3\n");
-    sponge(m,l);
+    unsigned char *input;
+    unsigned long length;
+    length = concatenate_01(&input,m,l);
+    sponge(d,s,input,length);
+    printstring(d);
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -123,6 +126,7 @@ unsigned long concatenate_01(unsigned char **Z, const unsigned char *X,
  */
 unsigned long pad10x1(unsigned char **P, unsigned int x, unsigned int m)
 {
+    printf("Entering pad10x1\n" );
     /* 1. j = (-m-2) mod x */
     long j = x - ((m + 2) % x);
     /* 2. P = 1 || zeroes(j) || 1 */
@@ -183,7 +187,6 @@ unsigned char rc(unsigned int t)
  */
 
 void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
-    printf("Entering Theta\n");
     unsigned char c[5][64];
     // C[x,z]=A[x,0,z] ⊕ A[x,1,z] ⊕ A[x,2,z] ⊕ A[x,3,z] ⊕ A[x,4,z]
     for (int i = 0 ; i < 5 ; i++)
@@ -271,7 +274,6 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
 
     for (int j = 0 ; j < l + 1 ; j++){
         RC[(1<<j)-1] = rc(j + (7 * ir));
-        
     }
     for(int k = 0 ; k < 64 ; k++){
         a[0][0][k] = a[0][0][k] ^ RC[k];
@@ -295,43 +297,40 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
     string_state(s,a,b);
 
     for (int ir = 0 ; ir < nr ; ir++){
-        print(a);
+        // print(a);
         theta(a,aprime);
-        printf("THETA\n");
-        print(aprime);
+        // printf("THETA\n");
+        // print(aprime);
         rho(aprime,a);
-        printf("RHO\n");
-        print(a);
+        // printf("RHO\n");
+        // print(a);
         pi(a,aprime);
-        printf("PI\n");
-        print(aprime);
+        // printf("PI\n");
+        // print(aprime);
         chi(aprime,a);
-        printf("CHI\n");
-        print(a);
+        // printf("CHI\n");
+        // print(a);
         iota(a,ir);
-        printf("IOTA\n");
-        print(a);
+        // printf("IOTA\n");
+        // print(a);
     }
-
     state_string(op,a);
 }
 
 /* Perform the sponge(A,ir) algorithm
  * n - input string
  * d - non negative integer
- * z - output string
+ * out - output string
+ * out_len - length of output
  */
 
-void sponge( unsigned char* m , unsigned int l ){
-    // unsigned char* op;
-    // op = (unsigned char*)malloc(200);
-    // keccakp( m , l ,12 ,op);
-    // printstring(op);
+void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l ){
 
+    printf("Entering sponge:%d\n",l );
     unsigned char *P;
     unsigned long p_len;
     p_len = pad10x1(&P, 1088, l);
-
+    p_len = concatenate(&P,m,l,&P,p_len);
     unsigned long n = p_len / 1088;
     // unsigned long c = 1600 - 1088;
 
@@ -339,13 +338,25 @@ void sponge( unsigned char* m , unsigned int l ){
     S = (unsigned char*)malloc(200);
     memset(S,0,sizeof(S));
 
+    printf("Entering sponge loop: %d\n" , p_len);
     for ( int i = 0 ; i < n ; i++){
         for ( int j = 0 ; j < 136 ; j++){
             *(S+j) = *(S+j) ^ *(P+j+(i*136));
         }
         keccakp(S, 1600 ,24 , S);
-        printstring(S);
     }
+
+    unsigned char *Z;
+    unsigned int Z_len;
+    Z_len = concatenate(&Z,Z,0,S,136);
+
+    while (Z_len < out_len){
+        keccakp(S, 1600 ,24 , S);
+        Z_len = concatenate(&Z,Z,Z_len,S,136);        
+        printf("length of Z: %d\n", Z_len);
+    }
+    out = Z;
+    printstring(out);
 }
 
 /* Perform the string to state array

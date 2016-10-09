@@ -23,4 +23,4 @@ void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64]);
 void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]);
 void iota( unsigned char a[5][5][64] , unsigned long ir);
 unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr ,unsigned char* op);
-void sponge( unsigned char* m , unsigned int l );
+void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l );
