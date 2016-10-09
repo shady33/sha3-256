@@ -198,10 +198,12 @@ void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
 
     unsigned char d[5][64];
     // D[x, z]=C[(x-1) mod 5, z] ⊕ C[(x+1) mod 5, (z –1) mod w].
-    for (int i = 0 ; i < 5 ; i++)
-        for(int j = 0 ; j < 64 ; j++){
+    for (int i = 0 ; i < 5 ; i++){
+        for(int j = 0 ; j < 64 ; j++)
+        {
             d[i][j] = c[((i-1)+5)%5][j] ^ c[(i+1)%5][((j-1)+64)%64];
         }
+    }
 
     //A′[x,y,z] = A[x,y,z] ⊕ D[x,z].
     for (int i = 0 ; i < 5 ; i++)
@@ -217,7 +219,8 @@ void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
 void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
 {    
     // A′[0,0,z] = A[0,0,z]
-    for(int k = 0 ; k < 64  ; k++){
+    for(int k = 0 ; k < 64  ; k++)
+    {
         aprime[0][0][k] = a[0][0][k];
     }
 
@@ -228,8 +231,10 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
     int i = 1;
     int j = 0;
     int tmp = 0;
-    for ( int t = 0; t < 24 ; t++){
-        for(int k = 0 ; k < 64  ; k++){
+    for ( int t = 0; t < 24 ; t++)
+    {
+        for(int k = 0 ; k < 64  ; k++)
+        {
             aprime[i][j][k] = a[i][j][positive_modulo((k-((t+1)*(t+2)/2)),64)];
         }
         tmp = i;
@@ -270,7 +275,6 @@ void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64])
  */
 void iota( unsigned char a[5][5][64] , unsigned long ir)
 {
-    
     unsigned int l = 6;
     unsigned char RC[(1<<l)];
     memset(RC,0,sizeof(RC));
@@ -287,7 +291,6 @@ void iota( unsigned char a[5][5][64] , unsigned long ir)
         a[0][0][k] = a[0][0][k] ^ RC[k];
     }
 }
-
 
 /* Perform the keccakp(s,b,nr) algorithm
  * s - input string
@@ -390,14 +393,16 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
  * z - input state array
  * n - output string
  */
-
-void state_string(unsigned char *n , unsigned char z[5][5][64]){
-    // printf("Entering State to String:\n");
+void state_string(unsigned char *n , unsigned char z[5][5][64])
+{
     int num = 0;
     int cnt = 0;
-    for(int j = 0 ; j < 5 ; j++){
-        for(int i = 0 ; i < 5 ; i++){
-            for(int k = 0 ; k < 64 ; k+=8){
+    for(int j = 0 ; j < 5 ; j++)
+    {
+        for(int i = 0 ; i < 5 ; i++)
+        {
+            for(int k = 0 ; k < 64 ; k+=8)
+            {
                 num = (z[i][j][k] == 1 ? 1 : 0 )<< (k%8);
                 num += (z[i][j][k+1] == 1 ? 1 : 0 )<< ((k+1)%8);
                 num += (z[i][j][k+2] == 1 ? 1 : 0 )<< ((k+2)%8);
@@ -417,16 +422,18 @@ void state_string(unsigned char *n , unsigned char z[5][5][64]){
  * n - input string
  * z - output state array
  */
-
-void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size){
+void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size)
+{
     unsigned int tmp = 0;
-    // printf("Entering String to State: %d\n",size);
-    for(int j = 0 ; j < 5 ; j++){
-        for(int i = 0 ; i < 5 ; i++){
-            for(int k = 0 ; k < 64 ; k+=8){
+    for(int j = 0 ; j < 5 ; j++)
+    {
+        for(int i = 0 ; i < 5 ; i++)
+        {
+            for(int k = 0 ; k < 64 ; k+=8)
+            {
                 tmp = (((64 * ((5 * j) + i))) + (k))/8;
-                // printf("%d %d %d %d\n", i,j,k,tmp);
-                if(tmp < size){
+                if(tmp < size)
+                {
                     z[i][j][k] = BIT(*(n+tmp),0);
                     z[i][j][k+1] = BIT(*(n+tmp),1);
                     z[i][j][k+2] = BIT(*(n+tmp),2);
@@ -445,10 +452,11 @@ void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size
  * s - input string
  * len - length of string
  */
-
-void printstring(unsigned char* s,unsigned int len){
+void printstring(unsigned char* s,unsigned int len)
+{
     printf("Printing String\n");
-    for(unsigned int i = 0 ; i < ((len / 8) + (len % 8 ? 1 : 0)); i++){
+    for(unsigned int i = 0 ; i < ((len / 8) + (len % 8 ? 1 : 0)); i++)
+    {
         printf("%02x ", *(s+i));
     }
 }
@@ -456,13 +464,16 @@ void printstring(unsigned char* s,unsigned int len){
 /* Print 5x5x64 matrix
  * a - input matrix
  */
-
-void print(unsigned char a[5][5][64]){
+void print(unsigned char a[5][5][64])
+{
     printf("Printing\n");
     int num = 0;
     for(int j = 0 ; j < 5 ; j++)
-        for(int i = 0 ; i < 5 ; i++){
-            for(int k = 63 ; k > -1 ; k-=8){
+    {
+        for(int i = 0 ; i < 5 ; i++)
+        {
+            for(int k = 63 ; k > -1 ; k-=8)
+            {
                 num = (a[i][j][k] == 1 ? 1 : 0 )<< (k%8);
                 num += (a[i][j][k-1] == 1 ? 1 : 0 )<< ((k-1)%8);
                 num += (a[i][j][k-2] == 1 ? 1 : 0 )<< ((k-2)%8);
@@ -475,6 +486,7 @@ void print(unsigned char a[5][5][64]){
             }
             printf(" ");
         }
+    }
 }
 
 /* Print a 2D matrix
@@ -482,27 +494,32 @@ void print(unsigned char a[5][5][64]){
  * l - rows of matrix
  * m - columns of matrix
  */
-
-void print_2d(unsigned char *a, int l, int m){
+void print_2d(unsigned char *a, int l, int m)
+{
     printf("Printing 2D\n");
     for(int i = 0 ; i < l ; i++)
-        for(int j = 0 ; j < m ; j++){
+    {
+        for(int j = 0 ; j < m ; j++)
+        {
             if(j%8 == 0)
                 printf(" ");
             printf("%d", *(a+i+j));
-        }    
+        }
+    }
 }
 
 /* Print a 5x5x64 matrix byte by byte
  * a - input matrix
  */
-
-void print_in_pairs(unsigned char a[5][5][64]){
-    printf("\nPriting in pairs\n");
+void print_in_pairs(unsigned char a[5][5][64])
+{
     int num = 0;
-    for(int j = 0 ; j < 5 ; j++){
-        for(int i = 0 ; i < 5 ; i++){
-            for(int k = 0 ; k < 64 ; k+=8){
+    for(int j = 0 ; j < 5 ; j++)
+    {
+        for(int i = 0 ; i < 5 ; i++)
+        {
+            for(int k = 0 ; k < 64 ; k+=8)
+            {
                 num = (a[i][j][k] == 1 ? 1 : 0 )<< (k%8);
                 num += (a[i][j][k+1] == 1 ? 1 : 0 )<< ((k+1)%8);
                 num += (a[i][j][k+2] == 1 ? 1 : 0 )<< ((k+2)%8);
