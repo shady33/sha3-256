@@ -37,8 +37,9 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     unsigned char *input;
     unsigned long length;
     length = concatenate_01(&input,m,l);
+    printf("String of length %d\n", length);
+    printstring(input,length);
     sponge(d,s,input,length);
-    printstring(d);
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -268,6 +269,7 @@ void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]){
  */
 
 void iota( unsigned char a[5][5][64] , unsigned long ir){
+    
     unsigned int l = 6;
     unsigned char RC[(1<<l)];
     memset(RC,0,sizeof(RC));
@@ -294,69 +296,93 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
     unsigned char aprime[5][5][64];
     memset(a, 0, sizeof(a));
     memset(aprime, 0, sizeof(aprime));
-    string_state(s,a,b);
 
+    string_state(s,a,b);
+    printstring(s,1600);
+    print_in_pairs(a);
     for (int ir = 0 ; ir < nr ; ir++){
+        // printf("Inside ir %d\n",ir);
         // print(a);
         theta(a,aprime);
         // printf("THETA\n");
-        // print(aprime);
+        // print_in_pairs(aprime);
         rho(aprime,a);
         // printf("RHO\n");
-        // print(a);
+        // print_in_pairs(a);
         pi(a,aprime);
         // printf("PI\n");
-        // print(aprime);
+        // print_in_pairs(aprime);
         chi(aprime,a);
         // printf("CHI\n");
-        // print(a);
+        // print_in_pairs(a);
         iota(a,ir);
         // printf("IOTA\n");
-        // print(a);
+        // print_in_pairs(a);
     }
     state_string(op,a);
 }
 
 /* Perform the sponge(A,ir) algorithm
- * n - input string
- * d - non negative integer
+ * m - input string
+ * l - non negative integer
  * out - output string
  * out_len - length of output
  */
 
 void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l ){
 
-    printf("Entering sponge:%d\n",l );
+    printf("\nEntering sponge:%d\n",l );
     unsigned char *P;
     unsigned long p_len;
-    p_len = pad10x1(&P, 1088, l);
-    p_len = concatenate(&P,m,l,&P,p_len);
+    unsigned char *inter;
+    unsigned long inter_len;
+
+    inter_len = pad10x1(&inter, 1088, l);
+    // printf("\nIntermidate of %d\n", inter_len);
+    // printstring(inter,inter_len);
+
+    p_len = concatenate(&P,m,l,inter,inter_len);
     unsigned long n = p_len / 1088;
     // unsigned long c = 1600 - 1088;
 
+    // printf("\nP of %d\n", p_len);
+    // printstring(P,p_len);
+    
     unsigned char *S;
     S = (unsigned char*)malloc(200);
     memset(S,0,sizeof(S));
 
-    printf("Entering sponge loop: %d\n" , p_len);
+    printf("\nEntering sponge loop: %d\n" , p_len);
     for ( int i = 0 ; i < n ; i++){
+        // printf("\nS: %d\n", i);
+        // printstring(S,1600);
         for ( int j = 0 ; j < 136 ; j++){
             *(S+j) = *(S+j) ^ *(P+j+(i*136));
         }
+        // printf("\nS After XOR\n");
+        // printstring(S,1600);
         keccakp(S, 1600 ,24 , S);
+        // printf("\nS After keccakp\n");
+        // printstring(S,1600);
     }
 
     unsigned char *Z;
     unsigned int Z_len;
-    Z_len = concatenate(&Z,Z,0,S,136);
+    Z_len = concatenate(&Z,Z,0,S,1088);
 
+    // printf("Output length: %d\n", out_len);
     while (Z_len < out_len){
+        
+        // printf("\nZ LOOP with length: %d\n",Z_len);
+        // printstring(Z,Z_len);
+
         keccakp(S, 1600 ,24 , S);
-        Z_len = concatenate(&Z,Z,Z_len,S,136);        
-        printf("length of Z: %d\n", Z_len);
+        Z_len = concatenate(&Z,Z,Z_len,S,1088);        
     }
+
+    // printf("\nFinal Z length: %d\n",Z_len);
+    // printstring(Z,Z_len);
     out = Z;
-    printstring(out);
 }
 
 /* Perform the string to state array
@@ -392,28 +418,31 @@ void state_string(unsigned char *n , unsigned char z[5][5][64]){
  */
 
 void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size){
+    int tmp = 0;
     printf("Entering String to State: %d\n",size);
     for(int j = 0 ; j < 5 ; j++){
         for(int i = 0 ; i < 5 ; i++){
             for(int k = 0 ; k < 64 ; k+=8){
-                if(((64 * ((5 * j) + i)) + k) < size){
-                    z[i][j][k] = BIT(*(n+i+j),0);
-                    z[i][j][k+1] = BIT(*(n+i+j),1);
-                    z[i][j][k+2] = BIT(*(n+i+j),2);
-                    z[i][j][k+3] = BIT(*(n+i+j),3);
-                    z[i][j][k+4] = BIT(*(n+i+j),4);
-                    z[i][j][k+5] = BIT(*(n+i+j),5);
-                    z[i][j][k+6] = BIT(*(n+i+j),6);
-                    z[i][j][k+7] = BIT(*(n+i+j),7);
+                tmp = (((64 * ((5 * j) + i))) + (k))/8;
+                // printf("%d %d %d %d\n", i,j,k,tmp);
+                if((tmp) < size){
+                    z[i][j][k] = BIT(*(n+tmp),0);
+                    z[i][j][k+1] = BIT(*(n+tmp),1);
+                    z[i][j][k+2] = BIT(*(n+tmp),2);
+                    z[i][j][k+3] = BIT(*(n+tmp),3);
+                    z[i][j][k+4] = BIT(*(n+tmp),4);
+                    z[i][j][k+5] = BIT(*(n+tmp),5);
+                    z[i][j][k+6] = BIT(*(n+tmp),6);
+                    z[i][j][k+7] = BIT(*(n+tmp),7);
                 }
             }
         }
     }
 }
 
-void printstring(unsigned char* s){
+void printstring(unsigned char* s,unsigned int len){
     printf("Printing String\n");
-    for(int i = 0 ; i < 200 ; i++){
+    for(int i = 0 ; i < ((len / 8) + (len % 8 ? 1 : 0)); i++){
         printf("%02x ", *(s+i));
     }
 }
@@ -446,4 +475,25 @@ void print_2d(unsigned char *a, int l, int m){
                 printf(" ");
             printf("%d", *(a+i+j));
         }    
+}
+
+void print_in_pairs(unsigned char a[5][5][64]){
+    printf("\nPriting in pairs\n");
+    int num = 0;
+    for(int j = 0 ; j < 5 ; j++){
+        for(int i = 0 ; i < 5 ; i++){
+            for(int k = 0 ; k < 64 ; k+=8){
+                num = (a[i][j][k] == 1 ? 1 : 0 )<< (k%8);
+                num += (a[i][j][k+1] == 1 ? 1 : 0 )<< ((k+1)%8);
+                num += (a[i][j][k+2] == 1 ? 1 : 0 )<< ((k+2)%8);
+                num += (a[i][j][k+3] == 1 ? 1 : 0 )<< ((k+3)%8);
+                num += (a[i][j][k+4] == 1 ? 1 : 0 )<< ((k+4)%8);
+                num += (a[i][j][k+5] == 1 ? 1 : 0 )<< ((k+5)%8);
+                num += (a[i][j][k+6] == 1 ? 1 : 0 )<< ((k+6)%8);
+                num += (a[i][j][k+7] == 1 ? 1 : 0 )<< ((k+7)%8);
+                printf("%02x ", num);
+            }
+        }
+    }
+    printf("\n");
 }

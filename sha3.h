@@ -15,8 +15,9 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
 void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size);
 void state_string(unsigned char *n , unsigned char z[5][5][64]);
 void theta( unsigned char a[5][5][64],  unsigned char b[5][5][64]);
-void printstring(unsigned char* s);
+void printstring(unsigned char* s,unsigned int length);
 void print(unsigned char a[5][5][64]);
+void print_in_pairs(unsigned char a[5][5][64]);
 void print_2d(unsigned char *a, int l, int m);
 void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64]);
 void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64]);
