@@ -33,15 +33,15 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
         return;
 
     /* Implement the rest of this function */
-    // printf("Entering SHA-3\n");
     unsigned char *input;
     unsigned long length;
+
+    // Concatenate Message with 01 i.e. input = M || 01
     length = concatenate_01(&input,m,l);
-    // printf("String of length %d\n", length);
-    // printstring(input,length);
+
+    // Sponge function
     sponge(d,s,input,length);
     free(input);
-    // printstring(d,256);
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -129,7 +129,6 @@ unsigned long concatenate_01(unsigned char **Z, const unsigned char *X,
  */
 unsigned long pad10x1(unsigned char **P, unsigned int x, unsigned int m)
 {
-    // printf("Entering pad10x1\n" );
     /* 1. j = (-m-2) mod x */
     long j = x - ((m + 2) % x);
     /* 2. P = 1 || zeroes(j) || 1 */
@@ -185,12 +184,13 @@ unsigned char rc(unsigned int t)
 }
 
 /* Perform the theta(A) algorithm
- * A - input state array
- * A' - output state array
+ * a - input state array
+ * aprime - output state array
  */
-
-void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
+void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+{
     unsigned char c[5][64];
+
     // C[x,z]=A[x,0,z] ⊕ A[x,1,z] ⊕ A[x,2,z] ⊕ A[x,3,z] ⊕ A[x,4,z]
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 64 ; j++)
@@ -200,13 +200,10 @@ void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
     // D[x, z]=C[(x-1) mod 5, z] ⊕ C[(x+1) mod 5, (z –1) mod w].
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 64 ; j++){
-            // printf("%d %d %d ", ((i-1)+5)%5,j,c[((i-1)+5)%5][j]);
-            // printf("%d %d %d\n", (i+1)%5,((j-1)+64)%64,c[(i+1)%5][((j-1)+64)%64]);
             d[i][j] = c[((i-1)+5)%5][j] ^ c[(i+1)%5][((j-1)+64)%64];
         }
 
     //A′[x,y,z] = A[x,y,z] ⊕ D[x,z].
-    // unsigned char aprime[5][5][64];
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 5 ; j++)
             for(int k = 0 ; k < 64 ; k++)
@@ -214,18 +211,20 @@ void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
 }
 
 /* Perform the p(A) algorithm
- * A - input state array
- * A' - output state array
+ * a - input state array
+ * aprime - output state array
  */
-
-void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
-    
-    //A′ [0,0,z] = A[0,0,z]
+void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+{    
+    // A′[0,0,z] = A[0,0,z]
     for(int k = 0 ; k < 64  ; k++){
         aprime[0][0][k] = a[0][0][k];
     }
 
-    //Step 3
+    /* For t from 0 to 23:
+     *   a. for all z such that 0≤z<w, let A′[x, y, z] = A[x, y, (z–(t+1)(t+2)/2) mod w];
+     *   b. let (x, y) = (y, (2x+3y) mod 5).
+     */
     int i = 1;
     int j = 0;
     int tmp = 0;
@@ -240,12 +239,12 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
 }
 
 /* Perform the pi(A) algorithm
- * A - input state array
- * A' - output state array
+ * a - input state array
+ * aprime - output state array
  */
-
-void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
-
+void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+{
+    // For all x,y,z -> A′[x, y, z]= A[(x + 3y) mod 5, x, z].
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 5 ; j++)
             for(int k = 0 ; k < 64 ; k++)
@@ -256,9 +255,9 @@ void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64]){
  * A - input state array
  * A' - output state array
  */
-
-void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]){
-
+void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64])
+{
+    // For all xy,z -> A′[x,y,z] = A[x,y,z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y, z]).
     for (int i = 0 ; i < 5 ; i++)
         for(int j = 0 ; j < 5 ; j++)
             for(int k = 0 ; k < 64 ; k++)
@@ -266,20 +265,25 @@ void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64]){
 }
 
 /* Perform the iota(A,ir) algorithm
- * A - input/output state array
+ * a - input/output state array
  * ir - round index
  */
-
-void iota( unsigned char a[5][5][64] , unsigned long ir){
+void iota( unsigned char a[5][5][64] , unsigned long ir)
+{
     
     unsigned int l = 6;
     unsigned char RC[(1<<l)];
     memset(RC,0,sizeof(RC));
 
-    for (unsigned int j = 0 ; j < l + 1 ; j++){
+    // RC[2^j –1]=rc(j+(7*ir))
+    for (unsigned int j = 0 ; j < l + 1 ; j++)
+    {
         RC[(1<<j)-1] = rc(j + (7 * ir));
     }
-    for(int k = 0 ; k < 64 ; k++){
+
+    // a[0,0,z]=a[0,0,z] ⊕ RC[z].
+    for(int k = 0 ; k < 64 ; k++)
+    {
         a[0][0][k] = a[0][0][k] ^ RC[k];
     }
 }
@@ -291,36 +295,30 @@ void iota( unsigned char a[5][5][64] , unsigned long ir){
  * nr - number of rounds
  * op - output string
  */
-
-void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op){
-    
+void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op)
+{
     unsigned char a[5][5][64];
     unsigned char aprime[5][5][64];
     memset(a, 0, sizeof(a));
     memset(aprime, 0, sizeof(aprime));
 
+    // String to State Array a
     string_state(s,a,b);
-    // printstring(s,1600);
-    // print_in_pairs(a);
-    for (unsigned int ir = 0 ; ir < nr ; ir++){
-        // printf("Inside ir %d\n",ir);
-        // print(a);
+
+    // 12+2l–nr to 12+2l-1 ... l = 6 and nr = 24
+    for (unsigned int ir = 0 ; ir < nr ; ir++)
+    {
         theta(a,aprime);
-        // printf("THETA\n");
-        // print_in_pairs(aprime);
+
         rho(aprime,a);
-        // printf("RHO\n");
-        // print_in_pairs(a);
+
         pi(a,aprime);
-        // printf("PI\n");
-        // print_in_pairs(aprime);
+
         chi(aprime,a);
-        // printf("CHI\n");
-        // print_in_pairs(a);
+
         iota(a,ir);
-        // printf("IOTA\n");
-        // print_in_pairs(a);
     }
+    // State array to String op
     state_string(op,a);
 }
 
@@ -330,61 +328,58 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char
  * out - output string
  * out_len - length of output
  */
-
-void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l ){
-
-    // printf("\nEntering sponge:%d\n",l );
+void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigned int l )
+{
     unsigned char *P;
     unsigned long p_len;
     unsigned char *inter;
     unsigned long inter_len;
 
+    // pad(r, len(N))
     inter_len = pad10x1(&inter, 1088, l);
-    // printf("\nIntermidate of %d\n", inter_len);
-    // printstring(inter,inter_len);
 
+    //  P= N || pad(r, len(N))
     p_len = concatenate(&P,m,l,inter,inter_len);
     unsigned long n = p_len / 1088;
-    // unsigned long c = 1600 - 1088;
-
-    // printf("\nP of %d\n", p_len);
-    // printstring(P,p_len);
     
+    // S = 0 * 200
     unsigned char *S;
     S = (unsigned char*)malloc(200);
     memset(S,0,sizeof(unsigned char));
 
-    // printf("\nEntering sponge loop: %d\n" , p_len);
-    for (unsigned long i = 0 ; i < n ; i++){
-        // printf("\nS: %d\n", i);
-        // printstring(S,1600);
-        for ( int j = 0 ; j < 136 ; j++){
+    // 0 to n-1 S=f(S ^ (Pi || 0c)).
+    for (unsigned long i = 0 ; i < n ; i++)
+    {
+        /* S = S ^ Pi for 136 bytes
+         * Remaining 64 bytes of P's are 0
+         */
+        for ( int j = 0 ; j < 136 ; j++)
+        {
             *(S+j) = *(S+j) ^ *(P+j+(i*136));
         }
-        // printf("\nS After XOR\n");
-        // printstring(S,1600);
+        // Keccackp
         keccakp(S, 1600 ,24 , S);
-        // printf("\nS After keccakp\n");
-        // printstring(S,1600);
     }
 
     unsigned char *Z;
     unsigned int Z_len = 0;
+
+    // Z = Z || S 
     Z_len = concatenate(&Z,Z,0,S,1088);
 
-    // printf("\nS Before trunc\n");
-    // printstring(S,1600);
-
+    // While |Z| < 256
     while (Z_len < out_len){
-        // printf("\nZ LOOP with length: %d\n",Z_len);
-        // printstring(Z,Z_len);
+        // S=f(S)
         keccakp(S, 1600 ,24 , S);
+
+        // Z=Z || Truncr(S)
         Z_len = concatenate(&Z,Z,Z_len,S,1088);        
     }
 
-    // printf("\nFinal Z length: %d\n",Z_len);
-    // printstring(Z,Z_len);
+    // Copy 32 bytes of Z to out
     memcpy(out,Z,32);
+
+    // Freeing Memory
     free(inter);
     free(P);
     // free(S);
