@@ -38,8 +38,9 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     unsigned long length;
     length = concatenate_01(&input,m,l);
     printf("String of length %d\n", length);
-    printstring(input,length);
+    // printstring(input,length);
     sponge(d,s,input,length);
+    // printstring(d,256);
 }
 
 /* Concatenate two bit strings (X||Y)
@@ -298,8 +299,8 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
     memset(aprime, 0, sizeof(aprime));
 
     string_state(s,a,b);
-    printstring(s,1600);
-    print_in_pairs(a);
+    // printstring(s,1600);
+    // print_in_pairs(a);
     for (int ir = 0 ; ir < nr ; ir++){
         // printf("Inside ir %d\n",ir);
         // print(a);
@@ -370,7 +371,9 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     unsigned int Z_len;
     Z_len = concatenate(&Z,Z,0,S,1088);
 
-    // printf("Output length: %d\n", out_len);
+    // printf("\nS Before trunc\n");
+    // printstring(S,1600);
+
     while (Z_len < out_len){
         
         // printf("\nZ LOOP with length: %d\n",Z_len);
@@ -382,7 +385,7 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
 
     // printf("\nFinal Z length: %d\n",Z_len);
     // printstring(Z,Z_len);
-    out = Z;
+    memcpy(out,Z,32);
 }
 
 /* Perform the string to state array
@@ -391,7 +394,7 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
  */
 
 void state_string(unsigned char *n , unsigned char z[5][5][64]){
-    printf("Entering State to String:\n");
+    // printf("Entering State to String:\n");
     int num = 0;
     int cnt = 0;
     for(int j = 0 ; j < 5 ; j++){
@@ -419,7 +422,7 @@ void state_string(unsigned char *n , unsigned char z[5][5][64]){
 
 void string_state(unsigned char *n , unsigned char z[5][5][64],unsigned int size){
     int tmp = 0;
-    printf("Entering String to State: %d\n",size);
+    // printf("Entering String to State: %d\n",size);
     for(int j = 0 ; j < 5 ; j++){
         for(int i = 0 ; i < 5 ; i++){
             for(int k = 0 ; k < 64 ; k+=8){
