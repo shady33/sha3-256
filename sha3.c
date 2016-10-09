@@ -40,6 +40,7 @@ void sha3(unsigned char *d, unsigned int s, const unsigned char *m,
     printf("String of length %d\n", length);
     // printstring(input,length);
     sponge(d,s,input,length);
+    free(input);
     // printstring(d,256);
 }
 
@@ -321,6 +322,7 @@ unsigned char* keccakp(unsigned char *s , unsigned int b ,unsigned long nr , uns
         // print_in_pairs(a);
     }
     state_string(op,a);
+
 }
 
 /* Perform the sponge(A,ir) algorithm
@@ -368,7 +370,7 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     }
 
     unsigned char *Z;
-    unsigned int Z_len;
+    unsigned int Z_len = 0;
     Z_len = concatenate(&Z,Z,0,S,1088);
 
     // printf("\nS Before trunc\n");
@@ -386,6 +388,10 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     // printf("\nFinal Z length: %d\n",Z_len);
     // printstring(Z,Z_len);
     memcpy(out,Z,32);
+    free(Z);
+    free(P);
+    free(inter);
+    free(S);
 }
 
 /* Perform the string to state array
