@@ -9,7 +9,9 @@
 #define ROL64(a, n) ((((n)%64) != 0) ? ((((uint64_t)a) << ((n)%64)) ^ (((uint64_t)a) >> (64-((n)%64)))) : a)
 #define BIT(c, i) ((c & (1 << i)) ? 1 : 0)
 #define positive_modulo(i,n) (((i%n) + n) % n)
+#define index(x,y) ((( 5 * (y % 5))+ (x % 5)))
 
+uint64_t RC[24] = {0x0000000000000001,0x0000000000008082,0x800000000000808A,0x8000000080008000,0x000000000000808B,0x0000000080000001,0x8000000080008081,0x8000000000008009,0x000000000000008A,0x0000000000000088,0x0000000080008009,0x000000008000000A,0x000000008000808B,0x800000000000008B,0x8000000000008089,0x8000000000008003,0x8000000000008002,0x8000000000000080,0x000000000000800A,0x800000008000000A,0x8000000080008081,0x8000000000008080,0x0000000080000001,0x8000000080008008};
 unsigned long concatenate(unsigned char **Z, const unsigned char *X,
               unsigned long X_len, const unsigned char *Y,
               unsigned long Y_len);
@@ -187,43 +189,34 @@ unsigned char rc(unsigned int t)
  * a - input state array
  * aprime - output state array
  */
-void theta( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+void theta( uint64_t *a )
 {
-    unsigned char c[5][64];
-
-    // C[x,z]=A[x,0,z] ⊕ A[x,1,z] ⊕ A[x,2,z] ⊕ A[x,3,z] ⊕ A[x,4,z]
-    for (int i = 0 ; i < 5 ; i++)
-        for(int j = 0 ; j < 64 ; j++)
-            c[i][j] = a[i][0][j] ^ a[i][1][j] ^ a[i][2][j] ^ a[i][3][j] ^ a[i][4][j];
-
-    unsigned char d[5][64];
-    // D[x, z]=C[(x-1) mod 5, z] ⊕ C[(x+1) mod 5, (z –1) mod w].
-    for (int i = 0 ; i < 5 ; i++){
-        for(int j = 0 ; j < 64 ; j++)
-        {
-            d[i][j] = c[((i-1)+5)%5][j] ^ c[(i+1)%5][((j-1)+64)%64];
-        }
+    uint64_t c[5] , d[5];
+    for ( unsigned int i = 0 ; i < 5 ; i++)
+    {
+        c[i] =  *(a+index(i,0)) ^ *(a+index(i,1)) ^ *(a+index(i,2)) ^ *(a+index(i,3)) ^ *(a+index(i,4));
     }
 
-    //A′[x,y,z] = A[x,y,z] ⊕ D[x,z].
-    for (int i = 0 ; i < 5 ; i++)
-        for(int j = 0 ; j < 5 ; j++)
-            for(int k = 0 ; k < 64 ; k++)
-                aprime[i][j][k] = a[i][j][k] ^ d[i][k];
+    for ( unsigned int i = 0 ; i < 5 ; i++)
+    {
+        d[i] = c[((i-1)+5)%5] ^ ROL64(c[(i+1)%5],1);
+    }
+
+    for ( unsigned int i = 0 ; i < 5 ; i++)
+    {   
+        for ( unsigned int j = 0 ; j < 5 ; j++)
+        {
+            *(a + index(i,j)) = *(a + index(i,j)) ^ d[i];
+        }
+    }
 }
 
 /* Perform the p(A) algorithm
  * a - input state array
  * aprime - output state array
  */
-void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+void rho( uint64_t *a )
 {    
-    // A′[0,0,z] = A[0,0,z]
-    for(int k = 0 ; k < 64  ; k++)
-    {
-        aprime[0][0][k] = a[0][0][k];
-    }
-
     /* For t from 0 to 23:
      *   a. for all z such that 0≤z<w, let A′[x, y, z] = A[x, y, (z–(t+1)(t+2)/2) mod w];
      *   b. let (x, y) = (y, (2x+3y) mod 5).
@@ -233,10 +226,7 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
     int tmp = 0;
     for ( int t = 0; t < 24 ; t++)
     {
-        for(int k = 0 ; k < 64  ; k++)
-        {
-            aprime[i][j][k] = a[i][j][positive_modulo((k-((t+1)*(t+2)/2)),64)];
-        }
+        *(a + index(i,j)) = ROL64(*(a + index(i,j)),((t+1)*(t+2))/2);
         tmp = i;
         i = j;
         j = ((2 * tmp) + (3 * j)) % 5;
@@ -247,49 +237,56 @@ void rho( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
  * a - input state array
  * aprime - output state array
  */
-void pi( unsigned char a[5][5][64], unsigned char aprime[5][5][64])
+void pi( uint64_t *a )
 {
+    uint64_t *b;
+    b = malloc(200);
+    memset(b,0,sizeof(b));
+
     // For all x,y,z -> A′[x, y, z]= A[(x + 3y) mod 5, x, z].
     for (int i = 0 ; i < 5 ; i++)
+    {
         for(int j = 0 ; j < 5 ; j++)
-            for(int k = 0 ; k < 64 ; k++)
-                aprime[i][j][k] = a[(i+(3*j))%5][i][k];
+        {
+            *(b + index(i,j)) = *(a + index((i+(3*j))%5,i));
+        }
+    }
+    memcpy(a,b,200);
+    free(b);
 }
 
 /* Perform the chi(A) algorithm
  * A - input state array
  * A' - output state array
  */
-void chi( unsigned char a[5][5][64] ,unsigned char aprime[5][5][64])
+void chi( uint64_t *a)
 {
-    // For all xy,z -> A′[x,y,z] = A[x,y,z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y, z]).
+    uint64_t *b;
+    uint64_t tmp;
+    b = malloc(200);
+    memset(b,0,sizeof(b));
+
+    // For all x,y,z -> A′[x,y,z] = A[x,y,z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y, z]).
     for (int i = 0 ; i < 5 ; i++)
+    {
         for(int j = 0 ; j < 5 ; j++)
-            for(int k = 0 ; k < 64 ; k++)
-                aprime[i][j][k] = a[i][j][k] ^ ((a[(i+1)%5][j][k] ^ 1) * a[(i+2)%5][j][k]);
+        {
+            tmp = (*(a + index((i+1)%5,j)) ^ 0xFFFFFFFFFFFFFFFF) & (*(a + index((i+2)%5,j)));
+            *(b + index(i,j)) = *(a + index(i,j)) ^ tmp;
+        }
+    }
+    memcpy(a,b,200);
+    free(b);
 }
 
 /* Perform the iota(A,ir) algorithm
  * a - input/output state array
  * ir - round index
  */
-void iota( unsigned char a[5][5][64] , unsigned long ir)
+void iota( uint64_t *a , unsigned long ir)
 {
-    unsigned int l = 6;
-    unsigned char RC[(1<<l)];
-    memset(RC,0,sizeof(RC));
-
-    // RC[2^j –1]=rc(j+(7*ir))
-    for (unsigned int j = 0 ; j < l + 1 ; j++)
-    {
-        RC[(1<<j)-1] = rc(j + (7 * ir));
-    }
-
-    // a[0,0,z]=a[0,0,z] ⊕ RC[z].
-    for(int k = 0 ; k < 64 ; k++)
-    {
-        a[0][0][k] = a[0][0][k] ^ RC[k];
-    }
+    // a[0,0,z]=a[0,0,z] ⊕ RC[ir].
+    *( a + index(0,0))= *( a + index(0,0))^ RC[ir];
 }
 
 /* Perform the keccakp(s,b,nr) algorithm
@@ -300,29 +297,45 @@ void iota( unsigned char a[5][5][64] , unsigned long ir)
  */
 void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char* op)
 {
-    unsigned char a[5][5][64];
-    unsigned char aprime[5][5][64];
-    memset(a, 0, sizeof(a));
-    memset(aprime, 0, sizeof(aprime));
+    uint64_t *a;
+    a = s;
+    // printstring(s,b);
 
-    // String to State Array a
-    string_state(s,a,b);
+
+    // for(unsigned int i = 0 ; i < (b/64) ; i++)
+    //     printf("%016" PRIx64 " ", *(a+i));
+
+    // unsigned char a[5][5][64];
+    // unsigned char aprime[5][5][64];
+    // memset(a, 0, sizeof(a));
+    // memset(aprime, 0, sizeof(aprime));
+
+    // // String to State Array a
+    // string_state(s,a,b);
 
     // 12+2l–nr to 12+2l-1 ... l = 6 and nr = 24
     for (unsigned int ir = 0 ; ir < nr ; ir++)
     {
-        theta(a,aprime);
+        theta(a);
+        // printf("Theta\n");
+        // printstring(a,1600);
 
-        rho(aprime,a);
+        rho(a);
+        // printf("\nRho\n");
+        // printstring(a,1600);
 
-        pi(a,aprime);
-
-        chi(aprime,a);
-
+        pi(a);
+        // printf("\nPi\n");
+        // printstring(a,1600);
+        chi(a);
+        // printf("\nCHi\n");
+        // printstring(a,1600);
         iota(a,ir);
+        // printf("\nIota\n");
+        // printstring(a,1600);
     }
-    // State array to String op
-    state_string(op,a);
+    // // State array to String op
+    // state_string(op,a);
 }
 
 /* Perform the sponge algorithm
@@ -360,8 +373,8 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
         {
             *(S+j) = *(S+j) ^ *(P+j+(i*136));
         }
-        // Keccackp
-        keccakp(S, 1600 ,24 , S);
+        // Keccackp -- Change to 24
+        keccakp(S, 1600 , 24 , S);
     }
 
     unsigned char *Z;
@@ -383,10 +396,10 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     memcpy(out,Z,32);
 
     // Freeing Memory
-    free(inter);
-    free(P);
-    free(S);
-    free(Z);
+    // free(inter);
+    // free(P);
+    // free(S);
+    // free(Z);
 }
 
 /* Perform the string to state array
