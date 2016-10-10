@@ -385,8 +385,8 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     // Freeing Memory
     free(inter);
     free(P);
-    // free(S);
-    // free(Z);
+    free(S);
+    free(Z);
 }
 
 /* Perform the string to state array
