@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include "sha3.h"
 
 /* Useful macros */
@@ -240,8 +241,8 @@ void rho( uint64_t *a )
 void pi( uint64_t *a )
 {
     uint64_t *b;
-    b = malloc(200);
-    memset(b,0,sizeof(b));
+    b = calloc(25,sizeof(uint64_t));
+    // memset(b,0,sizeof(b));
 
     // For all x,y,z -> A′[x, y, z]= A[(x + 3y) mod 5, x, z].
     for (int i = 0 ; i < 5 ; i++)
@@ -263,8 +264,8 @@ void chi( uint64_t *a)
 {
     uint64_t *b;
     uint64_t tmp;
-    b = malloc(200);
-    memset(b,0,sizeof(b));
+    b = calloc(25,sizeof(uint64_t));
+    // memset(b,0,sizeof(b));
 
     // For all x,y,z -> A′[x,y,z] = A[x,y,z] ⊕ ((A[(x+1) mod 5, y, z] ⊕ 1) ⋅ A[(x+2) mod 5, y, z]).
     for (int i = 0 ; i < 5 ; i++)
@@ -299,19 +300,6 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char
 {
     uint64_t *a;
     a = s;
-    // printstring(s,b);
-
-
-    // for(unsigned int i = 0 ; i < (b/64) ; i++)
-    //     printf("%016" PRIx64 " ", *(a+i));
-
-    // unsigned char a[5][5][64];
-    // unsigned char aprime[5][5][64];
-    // memset(a, 0, sizeof(a));
-    // memset(aprime, 0, sizeof(aprime));
-
-    // // String to State Array a
-    // string_state(s,a,b);
 
     // 12+2l–nr to 12+2l-1 ... l = 6 and nr = 24
     for (unsigned int ir = 0 ; ir < nr ; ir++)
@@ -334,8 +322,7 @@ void keccakp(unsigned char *s , unsigned int b ,unsigned long nr , unsigned char
         // printf("\nIota\n");
         // printstring(a,1600);
     }
-    // // State array to String op
-    // state_string(op,a);
+    memcpy(op,a,200);
 }
 
 /* Perform the sponge algorithm
@@ -360,8 +347,11 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     
     // S = 0 * 200
     unsigned char *S;
-    S = (unsigned char*)malloc(200);
-    memset(S,0,sizeof(unsigned char));
+    S = calloc(200,sizeof(unsigned char));
+    if ( S == NULL)
+    {
+        printf("Memory Not allocated\n");
+    }
 
     // 0 to n-1 S=f(S ^ (Pi || 0c)).
     for (unsigned long i = 0 ; i < n ; i++)
@@ -373,7 +363,7 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
         {
             *(S+j) = *(S+j) ^ *(P+j+(i*136));
         }
-        // Keccackp -- Change to 24
+        // Keccackp
         keccakp(S, 1600 , 24 , S);
     }
 
@@ -396,10 +386,10 @@ void sponge(unsigned char *out, unsigned int out_len, unsigned char* m , unsigne
     memcpy(out,Z,32);
 
     // Freeing Memory
-    // free(inter);
-    // free(P);
-    // free(S);
-    // free(Z);
+    free(inter);
+    free(P);
+    free(S);
+    free(Z);
 }
 
 /* Perform the string to state array

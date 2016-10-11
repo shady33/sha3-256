@@ -1,5 +1,6 @@
 /* Implement the following API. Do NOT modify the given prototypes. */
 
+#include <inttypes.h>
 /* Compute the SHA-3 hash for a message.
  *
  * d - the output buffer (allocated by the caller)
